@@ -3,7 +3,6 @@ import { Routes, Route } from 'react-router-dom';
 import Home from '../pages/Home';
 import About from '../pages/About';
 import Categories from '../pages/Categories';
-import Contact from '../pages/Contact';
 import CreatePost from '../pages/CreatePost';
 import RegisterForm from '../pages/Register';
 import LoginForm from '../pages/Login';
@@ -23,7 +22,6 @@ const AppRoutes = () => {
             <Route path="/" element={<DefaultLayout><Home /></DefaultLayout>} />
             <Route path="/about" element={<DefaultLayout><About /></DefaultLayout>} />
             <Route path="/categories" element={<DefaultLayout><Categories /></DefaultLayout>} />
-            <Route path="/contact" element={<Contact />} />
             <Route path="/create-post" element={<PrivateRoute />}>
                 <Route index element={<DefaultLayout><CreatePost /></DefaultLayout>} />
             </Route>
