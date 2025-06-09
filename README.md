@@ -52,7 +52,7 @@ Project được chia thành hai phần chính:
 4.  **Khởi chạy Project:**
     * **Chạy Backend:** Mở một terminal, di chuyển vào thư mục `/api` và chạy:
         ```bash
-        npm start  # Hoặc npm run dev
+        node index.js
         ```
     * **Chạy Frontend:** Mở một terminal khác, ở thư mục gốc và chạy:
         ```bash
