@@ -16,7 +16,7 @@ const createPost = async (req, res) => {
         } = req.body;
 
         let featuredImage = '';
-        // SỬA ĐỔI: Thêm tiền tố 'uploads/' vào đường dẫn ảnh
+
         if (req.file) {
             featuredImage = `uploads/${req.file.filename}`;
         } else if (req.body.featuredImage) {
@@ -98,7 +98,7 @@ const approvePost = async (req, res) => {
         const postId = req.params.id;
         const post = await Post.findByIdAndUpdate(
             postId,
-            { approved: 'approved' }, // Set the post status to approved
+            { approved: 'approved' },
             { new: true }
         );
         if (!post) {
@@ -116,7 +116,7 @@ const rejectPost = async (req, res) => {
         const postId = req.params.id;
         const post = await Post.findByIdAndUpdate(
             postId,
-            { approved: 'rejected' }, // Đặt trạng thái là 'rejected'
+            { approved: 'rejected' },
             { new: true }
         );
         if (!post) {
@@ -163,7 +163,7 @@ const updatePost = async (req, res) => {
             title,
             content,
             excerpt,
-            approved: 'pending', // Set to pending for admin approval
+            approved: 'pending',
         };
 
         if (req.file) {
@@ -185,4 +185,27 @@ const updatePost = async (req, res) => {
         res.status(400).json({ error: error.message });
     }
 };
-module.exports = { createPost, getPosts, getAllArticles, getUserPosts, rejectPost, getPostsByCategory, approvePost, getAllPostsForAdmin, getPostById, updatePost };
+
+//  Controller for deleting a post
+const deletePost = async (req, res) => {
+    try {
+        const postId = req.params.id;
+        const post = await Post.findById(postId);
+
+        if (!post) {
+            return res.status(404).json({ message: 'Post not found' });
+        }
+
+        if (post.author.toString() !== req.user.id && req.user.role !== 'admin') {
+            return res.status(403).json({ message: 'User not authorized to delete this post' });
+        }
+
+        await Post.findByIdAndDelete(postId);
+
+        res.status(200).json({ message: 'Post deleted successfully' });
+    } catch (error) {
+        res.status(400).json({ error: error.message });
+    }
+};
+
+module.exports = { createPost, getPosts, deletePost, getAllArticles, getUserPosts, rejectPost, getPostsByCategory, approvePost, getAllPostsForAdmin, getPostById, updatePost };
