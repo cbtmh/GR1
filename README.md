@@ -5,7 +5,7 @@
 ## ✨ Tính năng
 
 * Tính năng 1: Đăng ký, đăng nhập người dùng.
-* Tính năng 2: Tạo, xem, sửa bài viết.
+* Tính năng 2: Tạo, xem, sửa, xóa bài viết.
 * Tính năng 3: User có thể comment vào bài viết
 
 ## 🛠️ Công nghệ sử dụng
