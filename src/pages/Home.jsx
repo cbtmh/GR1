@@ -146,8 +146,10 @@ const Home = () => {
               >
                 Create Account
               </button>
-              <button className="px-8 py-3 bg-white text-indigo-600 font-medium rounded-md border border-indigo-600 hover:bg-indigo-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-                Learn More
+              <button 
+              onClick={() => navigate("/about")}
+              className="px-8 py-3 bg-white text-indigo-600 font-medium rounded-md border border-indigo-600 hover:bg-indigo-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                About Us
               </button>
             </div>
           </div>
