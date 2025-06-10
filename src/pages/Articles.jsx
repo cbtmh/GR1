@@ -18,7 +18,7 @@ const Articles = () => {
     const location = useLocation();
     const navigate = useNavigate();
 
-    // Lấy categoryId từ query string
+
     const queryParams = new URLSearchParams(location.search);
     const categoryIdFromUrl = queryParams.get("category");
 
@@ -27,7 +27,7 @@ const Articles = () => {
             try {
                 let response;
                 if (categoryIdFromUrl) {
-                    // Đảm bảo gọi đúng path param, không phải query string
+
                     response = await apiClient.get(`/posts/category/${categoryIdFromUrl}`);
                     setArticles(Array.isArray(response.data) ? response.data : []);
                     setFilteredArticles(Array.isArray(response.data) ? response.data : []);
@@ -74,7 +74,7 @@ const Articles = () => {
         }
 
         setFilteredArticles(result);
-        setCurrentPage(1); // Reset to first page when filters change
+        setCurrentPage(1); 
     }, [searchTerm, articles]);
 
     // Get current articles for pagination

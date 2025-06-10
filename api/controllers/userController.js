@@ -1,7 +1,8 @@
 const User = require('../models/User');
 const bcrypt = require('bcryptjs'); // Import bcryptjs
 const jwt = require('jsonwebtoken');
-
+const crypto = require('crypto'); 
+const sendEmail = require('../utils/email'); 
 // Controller for user registration
 const registerUser = async (req, res) => {
     // If file is uploaded, use its path; else fallback to req.body.avatar
@@ -144,5 +145,110 @@ const updateUserCoverImage = async (req, res) => {
         res.status(500).json({ error: 'Server error while updating cover image.' });
     }
 };
+// Controller for forgot password
+const forgotPassword = async (req, res) => {
+    try {
+        // 1) Tìm user bằng email
+        const user = await User.findOne({ email: req.body.email });
+        if (!user) {
+            // Để bảo mật, không báo lỗi "User not found" mà trả về thành công chung chung
+            // để tránh kẻ xấu dò email tồn tại trong hệ thống.
+            return res.status(200).json({
+                status: 'success',
+                message: 'If a user with that email exists, a token has been sent.',
+            });
+        }
 
-module.exports = { registerUser, loginUser, getUsers, getUserProfile, updateUserAvatar, updateUserCoverImage };
+        // 2) Tạo token ngẫu nhiên
+        const resetToken = crypto.randomBytes(32).toString('hex');
+
+        // 3) Hash token và lưu vào DB
+        user.passwordResetToken = crypto
+            .createHash('sha256')
+            .update(resetToken)
+            .digest('hex');
+
+        // Token hết hạn sau 10 phút
+        user.passwordResetExpires = Date.now() + 10 * 60 * 1000;
+
+        await user.save({ validateBeforeSave: false });
+
+        // 4) Gửi token về email của user
+        const resetURL = `${process.env.FRONTEND_URL}/reset-password/${resetToken}`;
+
+        const message = `Forgot your password? Click the link to reset your password: ${resetURL}\nIf you didn't forget your password, please ignore this email! This link is valid for 10 minutes.`;
+
+        try {
+            await sendEmail({
+                email: user.email,
+                subject: 'Your password reset token (valid for 10 min)',
+                message,
+            });
+
+            res.status(200).json({
+                status: 'success',
+                message: 'Token sent to email!',
+            });
+        } catch (err) {
+            console.error('ERROR SENDING EMAIL:', err);
+            user.passwordResetToken = undefined;
+            user.passwordResetExpires = undefined;
+            await user.save({ validateBeforeSave: false });
+
+            return res.status(500).json({ message: 'There was an error sending the email. Try again later!' });
+        }
+    } catch (error) {
+        console.error('FORGOT PASSWORD ERROR:', error);
+        res.status(500).json({ error: 'Server error' });
+    }
+};
+
+// Controller for reset password
+const resetPassword = async (req, res) => {
+    try {
+        // 1) Lấy user dựa trên token
+        const hashedToken = crypto
+            .createHash('sha256')
+            .update(req.params.token)
+            .digest('hex');
+
+        const user = await User.findOne({
+            passwordResetToken: hashedToken,
+            passwordResetExpires: { $gt: Date.now() }, // Token chưa hết hạn
+        });
+
+        // 2) Nếu token không hợp lệ hoặc hết hạn
+        if (!user) {
+            return res.status(400).json({ message: 'Token is invalid or has expired' });
+        }
+         // Kiểm tra độ dài mật khẩu
+        if (!req.body.password || req.body.password.length < 6) {
+            return res.status(400).json({ message: 'Password must be at least 6 characters long' });
+        }
+
+        // Băm mật khẩu mới
+        const salt = await bcrypt.genSalt(10);
+        user.password = await bcrypt.hash(req.body.password, salt);
+        user.passwordResetToken = undefined;
+        user.passwordResetExpires = undefined;
+        await user.save();
+
+        // 3) Đăng nhập người dùng và gửi JWT
+        const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
+            expiresIn: '30d',
+        });
+        
+        const userObject = user.toObject();
+        delete userObject.password;
+
+        res.status(200).json({
+            ...userObject,
+            token,
+        });
+
+    } catch (error) {
+        console.error('RESET PASSWORD ERROR:', error);
+        res.status(500).json({ error: 'Server error' });
+    }
+};
+module.exports = { registerUser,forgotPassword,resetPassword, loginUser, getUsers, getUserProfile, updateUserAvatar, updateUserCoverImage };

@@ -15,7 +15,8 @@ import AdminPostsApproval from '../pages/AdminPostsApproval';
 import AdminLogin from '../pages/AdminLogin';
 import PostDetail from '../pages/PostDetail';
 import EditPost from '../pages/EditPost';
-
+import ForgotPassword from '../pages/ForgotPassword';
+import ResetPassword from '../pages/ResetPassword';
 const AppRoutes = () => {
     return (
         <Routes>
@@ -27,6 +28,8 @@ const AppRoutes = () => {
             </Route>
             <Route path="/register" element={<AuthLayout><RegisterForm /></AuthLayout>} />
             <Route path="/login" element={<AuthLayout><LoginForm /></AuthLayout>} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password/:token" element={<ResetPassword />} />
             <Route path="/articles" element={<DefaultLayout><Articles /></DefaultLayout>} />
             <Route path="/profile" element={<PrivateRoute />}>
                 <Route path=":id" element={<DefaultLayout><Profile /></DefaultLayout>} />

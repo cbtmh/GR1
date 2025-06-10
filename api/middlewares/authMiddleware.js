@@ -1,4 +1,4 @@
-// middlewares/authMiddleware.js
+
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 
@@ -11,7 +11,7 @@ const protect = async (req, res, next) => {
             token = req.headers.authorization.split(' ')[1];
 
             // Xác thực token
-            const decoded = jwt.verify(token, process.env.JWT_SECRET); // Đảm bảo bạn có JWT_SECRET trong file .env
+            const decoded = jwt.verify(token, process.env.JWT_SECRET); 
 
             // Lấy thông tin user từ token (không lấy password) và gán vào req
             req.user = await User.findById(decoded.id).select('-password');

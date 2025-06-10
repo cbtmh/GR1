@@ -1,5 +1,5 @@
 const express = require('express');
-const { registerUser, loginUser, getUsers, getUserProfile, updateUserAvatar, updateUserCoverImage } = require('../controllers/userController');
+const { registerUser, loginUser,forgotPassword,resetPassword, getUsers, getUserProfile, updateUserAvatar, updateUserCoverImage } = require('../controllers/userController');
 const multer = require('multer');
 const path = require('path');
 const router = express.Router();
@@ -29,7 +29,11 @@ router.get('/', getUsers);
 
 // Route for fetching a user's profile
 router.get('/profile/:id', getUserProfile);
+// Route for forgot password
+router.post('/forgot-password', forgotPassword);
 
+// Route for reset password
+router.patch('/reset-password/:token', resetPassword);
 // Multer config for cover image uploads
 const coverStorage = multer.diskStorage({
     destination: function (req, file, cb) {
