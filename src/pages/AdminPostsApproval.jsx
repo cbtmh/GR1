@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react"
 import apiClient from "../services/apiClient"
+import { Trash2 } from "lucide-react"
 
 const AdminPostsApproval = () => {
   const [posts, setPosts] = useState([])
@@ -64,7 +65,22 @@ const AdminPostsApproval = () => {
       alert("Reject failed");
     }
   };
-
+  // // NEW: Delete a post (Admin)
+  const handleDelete = async (postId) => {
+    if (window.confirm("Do you want to delete this post? This action cannot be undone.")) {
+      try {
+        await apiClient.delete(`/posts/${postId}`);
+        setPosts((prevPosts) => prevPosts.filter((post) => post._id !== postId));
+        if (selectedPost?._id === postId) {
+          setSelectedPost(null); // Clear selection if the selected post is deleted
+        }
+        alert("Delete successfully!");
+      } catch (err) {
+        console.error("Error when deleted post", err);
+        alert("Cannot delete this post. Please try again .");
+      }
+    }
+  };
   // Filter posts based on search, category, and status
   const filteredPosts = posts.filter((post) => {
     const matchesSearch =
@@ -372,6 +388,13 @@ const AdminPostsApproval = () => {
                     </div>
                   </div>
                 )}
+                <button
+                  onClick={() => handleDelete(selectedPost._id)}
+                  className="w-full flex items-center justify-center space-x-2 px-4 py-2 border border-transparent text-sm font-medium rounded-md text-red-700 bg-red-100 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                >
+                  <Trash2 className="w-5 h-5" />
+                  <span>Delete post</span>
+                </button>
                 {selectedPost.approved && (
                   <div className="p-6 border-t bg-gray-50">
                     <div className="text-center">
