@@ -44,7 +44,9 @@ const Profile = () => {
     fetchUserData();
     fetchUserPosts();
   }, [id]);
-
+  const handlePostDeleted = (deletedPostId) => {
+    setUserPosts(prevPosts => prevPosts.filter(post => post._id !== deletedPostId));
+  };
   if (!id) {
     console.error("Profile ID is undefined");
     return <div>Error: Profile ID is missing.</div>;
@@ -53,35 +55,33 @@ const Profile = () => {
   if (!userData) {
     return <div>Loading...</div>;
   }
-  // Nếu là profile của chính mình, ưu tiên lấy avatar từ Redux
+
   const isOwnProfile = user && (user.id === id || user._id === id);
   const avatarUrl = isOwnProfile ? user?.avatar : userData.avatar;
-  // Hàm xử lý khi người dùng chọn file mới
+
   const handleFileChange = async (event) => {
     const file = event.target.files[0];
     if (!file) return;
 
-    // Tạo FormData để gửi file lên server
+
     const formData = new FormData();
     formData.append('avatar', file);
 
     try {
-      // Gọi API và để cho Axios và interceptor tự xử lý headers
+
       const response = await apiClient.put(`/users/profile/avatar`, formData);
 
-      // Lấy URL avatar mới từ response của API
       const newAvatarUrl = response.data.avatarUrl;
-      // Cập nhật giao diện cục bộ và state toàn cục
+ 
       setUserData(prevData => ({ ...prevData, avatar: newAvatarUrl }));
       dispatch(updateUserAvatar(newAvatarUrl)); // Cập nhật Redux (Bước 3)
 
     } catch (error) {
       console.error("Error uploading avatar:", error);
-      // Thêm thông báo lỗi cho người dùng ở đây
     }
   };
 
-  // Hàm xử lý khi người dùng chọn cover image mới
+
   const handleCoverChange = async (event) => {
     const file = event.target.files[0];
     if (!file) return;
@@ -96,7 +96,7 @@ const Profile = () => {
     }
   };
 
-  // Xử lý cover image URL để luôn là absolute URL
+
   const coverUrl = userData.coverImage
     ? userData.coverImage.startsWith('http')
       ? userData.coverImage
@@ -198,6 +198,7 @@ const Profile = () => {
               <PostCard
                 key={post._id}
                 post={post}
+                onPostDelete={handlePostDeleted}
               />
             ))}
           </div>
