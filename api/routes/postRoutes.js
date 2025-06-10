@@ -1,7 +1,7 @@
 const express = require('express');
 const multer = require('multer');
 const path = require('path');
-const { createPost, getPosts, getAllArticles, getUserPosts, rejectPost, getPostsByCategory, approvePost, getAllPostsForAdmin, getPostById, updatePost } = require('../controllers/postController');
+const { createPost, getPosts, deletePost, getAllArticles, getUserPosts, rejectPost, getPostsByCategory, approvePost, getAllPostsForAdmin, getPostById, updatePost } = require('../controllers/postController');
 const { protect, isAdmin } = require('../middlewares/authMiddleware');
 const Post = require('../models/Post'); // Correct the import path for the Post model
 
@@ -35,6 +35,9 @@ router.get('/category/:categoryId', getPostsByCategory);
 
 // Route for updating a post by ID
 router.put('/:id', protect, upload.single('featuredImage'), updatePost);
+
+// Route for deleting a post by ID
+router.delete('/:id', protect, deletePost);
 
 // Route for admin to approve a post
 router.put('/:id/approve', protect, isAdmin, approvePost);
