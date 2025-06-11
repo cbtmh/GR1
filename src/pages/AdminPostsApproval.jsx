@@ -1,65 +1,75 @@
-import React, { useState, useEffect } from "react"
-import apiClient from "../services/apiClient"
-import { Trash2 } from "lucide-react"
+import React, { useState, useEffect } from "react";
+import apiClient from "../services/apiClient";
+import { Trash2 } from "lucide-react";
 
 const AdminPostsApproval = () => {
-  const [posts, setPosts] = useState([])
-  const [selectedPost, setSelectedPost] = useState(null)
-  const [searchTerm, setSearchTerm] = useState("")
-  const [filterCategory, setFilterCategory] = useState("all")
-  const [filterStatus, setFilterStatus] = useState("all")
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState("")
+  const [posts, setPosts] = useState([]);
+  const [selectedPost, setSelectedPost] = useState(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterCategory, setFilterCategory] = useState("all");
+  const [filterStatus, setFilterStatus] = useState("all");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  // --- NEW: Pagination State ---
+  const [currentPage, setCurrentPage] = useState(1);
+  const POSTS_PER_PAGE = 5; // Tối đa 5 bài post 1 trang
 
   // Redirect to login if no admin user
   useEffect(() => {
-    const adminUser = localStorage.getItem("adminUser")
+    const adminUser = localStorage.getItem("adminUser");
     if (!adminUser) {
-      window.location.href = "/admin/login"
+      window.location.href = "/admin/login";
     }
-  }, [])
+  }, []);
 
   // Fetch all posts for admin
   useEffect(() => {
     const fetchPosts = async () => {
-      setLoading(true)
-      setError("")
+      setLoading(true);
+      setError("");
       try {
-        const res = await apiClient.get("/posts/all")
-        setPosts(res.data || [])
+        const res = await apiClient.get("/posts/all");
+        setPosts(res.data || []);
       } catch (err) {
-        setError("Failed to load posts")
+        setError("Failed to load posts");
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
-    }
-    fetchPosts()
-  }, [])
+    };
+    fetchPosts();
+  }, []);
+
+    // NEW: Reset to page 1 when filters change
+    useEffect(() => {
+      setCurrentPage(1);
+    }, [searchTerm, filterCategory, filterStatus]);
+  
 
   // Approve a post
   const handleApprove = async (postId) => {
     try {
-      await apiClient.put(`/posts/${postId}/approve`)
+      await apiClient.put(`/posts/${postId}/approve`);
       setPosts((prev) =>
-        prev.map((post) => (post._id === postId ? { ...post, approved: 'approved' } : post)),
-      )
+        prev.map((post) => (post._id === postId ? { ...post, approved: "approved" } : post))
+      );
       if (selectedPost?._id === postId) {
-        setSelectedPost((prev) => (prev ? { ...prev, approved: 'approved' } : null))
+        setSelectedPost((prev) => (prev ? { ...prev, approved: "approved" } : null));
       }
     } catch (err) {
-      alert("Approve failed")
+      alert("Approve failed");
     }
-  }
+  };
 
   const handleReject = async (postId) => {
     try {
       // Gọi API endpoint mới
       await apiClient.put(`/posts/${postId}/reject`);
       setPosts((prev) =>
-        prev.map((post) => (post._id === postId ? { ...post, approved: 'rejected' } : post)),
+        prev.map((post) => (post._id === postId ? { ...post, approved: "rejected" } : post))
       );
       if (selectedPost?._id === postId) {
-        setSelectedPost((prev) => (prev ? { ...prev, approved: 'rejected' } : null));
+        setSelectedPost((prev) => (prev ? { ...prev, approved: "rejected" } : null));
       }
     } catch (err) {
       alert("Reject failed");
@@ -85,15 +95,28 @@ const AdminPostsApproval = () => {
   const filteredPosts = posts.filter((post) => {
     const matchesSearch =
       (post.title || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (post.author?.username || "").toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesCategory = filterCategory === "all" || (post.category?.name || post.category) === filterCategory
+      (post.author?.username || "").toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesCategory =
+      filterCategory === "all" || (post.category?.name || post.category) === filterCategory;
     const matchesStatus =
       filterStatus === "all" ||
-      (filterStatus === "pending" && post.approved === 'pending') ||
-      (filterStatus === "approved" && post.approved === 'approved') ||
-      (filterStatus === "rejected" && post.approved === 'rejected'); // Thêm điều kiện cho trạng thái 'rejected'
-    return matchesSearch && matchesCategory && matchesStatus
-  })
+      (filterStatus === "pending" && post.approved === "pending") ||
+      (filterStatus === "approved" && post.approved === "approved") ||
+      (filterStatus === "rejected" && post.approved === "rejected"); 
+    return matchesSearch && matchesCategory && matchesStatus;
+  });
+
+  //  Pagination Logic 
+  const indexOfLastPost = currentPage * POSTS_PER_PAGE;
+  const indexOfFirstPost = indexOfLastPost - POSTS_PER_PAGE;
+  const currentPosts = filteredPosts.slice(indexOfFirstPost, indexOfLastPost);
+  const totalPages = Math.ceil(filteredPosts.length / POSTS_PER_PAGE);
+
+  const paginate = (pageNumber) => {
+    if (pageNumber > 0 && pageNumber <= totalPages) {
+      setCurrentPage(pageNumber);
+    }
+  };
 
   // Format date for display
   const formatDate = (dateString) => {
@@ -103,44 +126,41 @@ const AdminPostsApproval = () => {
       day: "numeric",
       hour: "2-digit",
       minute: "2-digit",
-    })
-  }
+    });
+  };
 
   // Get color classes for status
   const getStatusColor = (status) => {
-    if (status === 'approved') return "bg-green-100 text-green-800";
-    if (status === 'pending') return "bg-yellow-100 text-yellow-800";
-    if (status === 'rejected') return "bg-red-100 text-red-800";
+    if (status === "approved") return "bg-green-100 text-green-800";
+    if (status === "pending") return "bg-yellow-100 text-yellow-800";
+    if (status === "rejected") return "bg-red-100 text-red-800";
     return "bg-gray-100 text-gray-800";
   };
 
   // Get unique categories for filter dropdown
   const categories = React.useMemo(
-    () => [
-      "all",
-      ...Array.from(new Set(posts.map((p) => p.category?.name).filter(Boolean))),
-    ],
-    [posts],
-  )
-  const pendingCount = posts.filter((p) => p.approved === 'pending').length
+    () => ["all", ...Array.from(new Set(posts.map((p) => p.category?.name).filter(Boolean)))],
+    [posts]
+  );
+  const pendingCount = posts.filter((p) => p.approved === "pending").length;
 
   // Handlers for filter changes
-  const handleSearchChange = (e) => setSearchTerm(e.target.value)
-  const handleCategoryChange = (e) => setFilterCategory(e.target.value)
-  const handleStatusChange = (e) => setFilterStatus(e.target.value)
+  const handleSearchChange = (e) => setSearchTerm(e.target.value);
+  const handleCategoryChange = (e) => setFilterCategory(e.target.value);
+  const handleStatusChange = (e) => setFilterStatus(e.target.value);
 
   // Handler for selecting a post
-  const handleSelectPost = (post) => setSelectedPost(post)
+  const handleSelectPost = (post) => setSelectedPost(post);
 
   // Handler for quick action buttons (stop event propagation)
   const handleQuickApprove = (e, postId) => {
-    e.stopPropagation()
-    handleApprove(postId)
-  }
+    e.stopPropagation();
+    handleApprove(postId);
+  };
   const handleQuickReject = (e, postId) => {
-    e.stopPropagation()
-    handleReject(postId)
-  }
+    e.stopPropagation();
+    handleReject(postId);
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -159,8 +179,8 @@ const AdminPostsApproval = () => {
               {/* Logout button */}
               <button
                 onClick={() => {
-                  localStorage.removeItem("adminUser")
-                  window.location.href = "/admin/login"
+                  localStorage.removeItem("adminUser");
+                  window.location.href = "/admin/login";
                 }}
                 className="ml-4 bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded-md text-sm font-medium shadow-sm border border-gray-300"
               >
@@ -222,16 +242,24 @@ const AdminPostsApproval = () => {
             </div>
             {/* Post List */}
             <div className="space-y-4">
-              {filteredPosts.map((post) => (
+              {/* --- MODIFIED: Map over currentPosts instead of filteredPosts --- */}
+              {currentPosts.map((post) => (
                 <div
                   key={post._id}
-                  className={`bg-white rounded-lg shadow-sm border transition-all hover:shadow-md ${selectedPost?._id === post._id ? "ring-2 ring-blue-500 border-blue-500" : ""
-                    }`}
+                  className={`bg-white rounded-lg shadow-sm border transition-all hover:shadow-md ${
+                    selectedPost?._id === post._id ? "ring-2 ring-blue-500 border-blue-500" : ""
+                  }`}
                 >
                   <div onClick={() => handleSelectPost(post)} className="p-6 cursor-pointer">
                     <div className="flex justify-between items-start mb-3">
-                      <h3 className="text-lg font-semibold text-gray-900 line-clamp-2">{post.title}</h3>
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(post.approved)}`}>
+                      <h3 className="text-lg font-semibold text-gray-900 line-clamp-2">
+                        {post.title}
+                      </h3>
+                      <span
+                        className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(
+                          post.approved
+                        )}`}
+                      >
                         {post.approved}
                       </span>
                     </div>
@@ -248,7 +276,10 @@ const AdminPostsApproval = () => {
 
                     <div className="flex flex-wrap gap-2 mt-3">
                       {(post.tags || []).map((tag) => (
-                        <span key={tag} className="px-2 py-1 bg-gray-100 text-gray-700 rounded-md text-xs">
+                        <span
+                          key={tag}
+                          className="px-2 py-1 bg-gray-100 text-gray-700 rounded-md text-xs"
+                        >
                           {tag}
                         </span>
                       ))}
@@ -256,7 +287,7 @@ const AdminPostsApproval = () => {
                   </div>
 
                   {/* Quick Actions - Show when post is selected and pending */}
-                  {selectedPost?._id === post._id && post.approved === 'pending' && (
+                  {selectedPost?._id === post._id && post.approved === "pending" && (
                     <div className="border-t bg-blue-50 p-4">
                       <div className="flex items-center justify-between">
                         <span className="text-sm font-medium text-blue-900">Take Action:</span>
@@ -265,8 +296,18 @@ const AdminPostsApproval = () => {
                             onClick={(e) => handleQuickApprove(e, post._id)}
                             className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition-colors text-sm font-medium flex items-center space-x-1"
                           >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                            <svg
+                              className="w-4 h-4"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M5 13l4 4L19 7"
+                              />
                             </svg>
                             <span>Approve</span>
                           </button>
@@ -274,7 +315,12 @@ const AdminPostsApproval = () => {
                             onClick={(e) => handleQuickReject(e, post._id)}
                             className="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 transition-colors text-sm font-medium flex items-center space-x-1"
                           >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg
+                              className="w-4 h-4"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
                               <path
                                 strokeLinecap="round"
                                 strokeLinejoin="round"
@@ -290,23 +336,29 @@ const AdminPostsApproval = () => {
                   )}
 
                   {/* Status message for non-pending posts when selected */}
-                  {selectedPost?._id === post._id && post.approved && (
-                    <div className="border-t bg-gray-50 p-4">
-                      <div className="flex items-center justify-center">
-                        <span className="text-sm text-gray-600">
-                          This post has been approved
-                          <span className="ml-2 text-green-600">✓</span>
-                        </span>
-                      </div>
-                    </div>
-                  )}
+                  {selectedPost?._id === post._id && post.approved !== "pending" && (
+                     <div className="border-t bg-gray-50 p-4">
+                       <div className="flex items-center justify-center">
+                         <span className="text-sm text-gray-600">
+                           This post has been {post.approved}
+                           {post.approved === 'approved' && <span className="ml-2 text-green-600">✓</span>}
+                           {post.approved === 'rejected' && <span className="ml-2 text-red-600">✗</span>}
+                         </span>
+                       </div>
+                     </div>
+                   )}
                 </div>
               ))}
 
-              {filteredPosts.length === 0 && (
+              {filteredPosts.length === 0 && !loading && (
                 <div className="bg-white rounded-lg shadow-sm border p-12 text-center">
                   <div className="text-gray-400 mb-4">
-                    <svg className="mx-auto h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg
+                      className="mx-auto h-12 w-12"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
                       <path
                         strokeLinecap="round"
                         strokeLinejoin="round"
@@ -320,23 +372,62 @@ const AdminPostsApproval = () => {
                 </div>
               )}
             </div>
+
+             {/* Pagination Controls  */}
+             {totalPages > 1 && (
+              <div className="mt-6 flex justify-center items-center space-x-2">
+                <button
+                  onClick={() => paginate(currentPage - 1)}
+                  disabled={currentPage === 1}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Previous
+                </button>
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                  <button
+                    key={page}
+                    onClick={() => paginate(page)}
+                    className={`px-4 py-2 text-sm font-medium border rounded-md ${
+                      currentPage === page
+                        ? "bg-blue-600 text-white border-blue-600"
+                        : "text-gray-700 bg-white border-gray-300 hover:bg-gray-50"
+                    }`}
+                  >
+                    {page}
+                  </button>
+                ))}
+                <button
+                  onClick={() => paginate(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Next
+                </button>
+              </div>
+            )}
           </div>
           {/* Main Content - Post Details */}
           <div className="lg:w-1/2">
             {selectedPost ? (
-              <div className="bg-white rounded-lg shadow-sm border">
+              <div className="bg-white rounded-lg shadow-sm border sticky top-8">
                 {/* Post Header */}
                 <div className="p-6 border-b">
                   <div className="flex justify-between items-start mb-4">
                     <h1 className="text-2xl font-bold text-gray-900">{selectedPost.title}</h1>
-                    <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(selectedPost.approved)}`}>
+                    <span
+                      className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(
+                        selectedPost.approved
+                      )}`}
+                    >
                       {selectedPost.approved}
                     </span>
                   </div>
 
                   <div className="flex items-center justify-between text-sm text-gray-500 mb-4">
                     <div className="flex items-center space-x-4">
-                      <span className="font-medium">By {selectedPost.author?.username || "Unknown"}</span>
+                      <span className="font-medium">
+                        By {selectedPost.author?.username || "Unknown"}
+                      </span>
                       <span>{selectedPost.category?.name || ""}</span>
                     </div>
                     <span>{formatDate(selectedPost.createdAt)}</span>
@@ -344,7 +435,10 @@ const AdminPostsApproval = () => {
 
                   <div className="flex flex-wrap gap-2">
                     {(selectedPost.tags || []).map((tag) => (
-                      <span key={tag} className="px-2 py-1 bg-blue-100 text-blue-800 rounded-md text-sm">
+                      <span
+                        key={tag}
+                        className="px-2 py-1 bg-blue-100 text-blue-800 rounded-md text-sm"
+                      >
                         {tag}
                       </span>
                     ))}
@@ -355,12 +449,14 @@ const AdminPostsApproval = () => {
                 <div className="p-6">
                   <h3 className="text-lg font-semibold text-gray-900 mb-3">Post Content</h3>
                   <div className="prose max-w-none">
-                    <p className="text-gray-700 leading-relaxed whitespace-pre-line">{selectedPost.content}</p>
+                    <p className="text-gray-700 leading-relaxed whitespace-pre-line">
+                      {selectedPost.content}
+                    </p>
                   </div>
                 </div>
 
                 {/* Action Buttons */}
-                {selectedPost.approved === 'pending' && (
+                {selectedPost.approved === "pending" && (
                   <div className="p-6 border-t bg-gradient-to-r from-blue-50 to-indigo-50">
                     <div className="text-center mb-4">
                       <h3 className="text-lg font-semibold text-gray-900 mb-2">Review Post</h3>
@@ -371,8 +467,18 @@ const AdminPostsApproval = () => {
                         onClick={() => handleApprove(selectedPost._id)}
                         className="flex-1 bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors font-medium flex items-center justify-center space-x-2 shadow-md"
                       >
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        <svg
+                          className="w-5 h-5"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M5 13l4 4L19 7"
+                          />
                         </svg>
                         <span>Approve Post</span>
                       </button>
@@ -380,36 +486,52 @@ const AdminPostsApproval = () => {
                         onClick={() => handleReject(selectedPost._id)}
                         className="flex-1 bg-red-600 text-white px-6 py-3 rounded-lg hover:bg-red-700 transition-colors font-medium flex items-center justify-center space-x-2 shadow-md"
                       >
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        <svg
+                          className="w-5 h-5"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M6 18L18 6M6 6l12 12"
+                          />
                         </svg>
                         <span>Reject Post</span>
                       </button>
                     </div>
                   </div>
                 )}
-                <button
+                 <button
                   onClick={() => handleDelete(selectedPost._id)}
-                  className="w-full flex items-center justify-center space-x-2 px-4 py-2 border border-transparent text-sm font-medium rounded-md text-red-700 bg-red-100 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                  className="w-full flex items-center justify-center space-x-2 px-4 py-2 border border-transparent text-sm font-medium rounded-b-md text-red-700 bg-red-100 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
                 >
                   <Trash2 className="w-5 h-5" />
                   <span>Delete post</span>
                 </button>
-                {selectedPost.approved && (
-                  <div className="p-6 border-t bg-gray-50">
-                    <div className="text-center">
-                      <div className="inline-flex items-center space-x-2 text-gray-600">
-                        <span>This post has been approved</span>
-                        <span className="text-green-600 text-xl">✓</span>
-                      </div>
-                    </div>
-                  </div>
+                {selectedPost.approved !== "pending" && (
+                   <div className="p-6 border-t bg-gray-50 rounded-b-lg">
+                   <div className="text-center">
+                     <div className="inline-flex items-center space-x-2 text-gray-600">
+                       <span>This post has been {selectedPost.approved}</span>
+                       {selectedPost.approved === 'approved' && <span className="text-green-600 text-xl">✓</span>}
+                       {selectedPost.approved === 'rejected' && <span className="text-red-600 text-xl">✗</span>}
+                     </div>
+                   </div>
+                 </div>
                 )}
               </div>
             ) : (
-              <div className="bg-white rounded-lg shadow-sm border p-12 text-center">
+              <div className="bg-white rounded-lg shadow-sm border p-12 text-center sticky top-8">
                 <div className="text-gray-400 mb-4">
-                  <svg className="mx-auto h-16 w-16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg
+                    className="mx-auto h-16 w-16"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
                     <path
                       strokeLinecap="round"
                       strokeLinejoin="round"
@@ -419,14 +541,16 @@ const AdminPostsApproval = () => {
                   </svg>
                 </div>
                 <h3 className="text-xl font-medium text-gray-900 mb-2">Select a Post</h3>
-                <p className="text-gray-500">Choose a post from the list to review its content and take action.</p>
+                <p className="text-gray-500">
+                  Choose a post from the list to review its content and take action.
+                </p>
               </div>
             )}
           </div>
         </div>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default AdminPostsApproval
+export default AdminPostsApproval;
