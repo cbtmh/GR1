@@ -22,7 +22,7 @@
 
 ## 📂 Cấu trúc Project
 Project được chia thành hai phần chính:
-* `/`: Chứa code cho phần frontend (client-side).
+* `/client`: Chứa code cho phần frontend (client-side).
 * `/api`: Chứa code cho phần backend (server-side).
 
 ## 🚀 Hướng dẫn cài đặt và chạy Project
@@ -43,8 +43,9 @@ Project được chia thành hai phần chính:
     ```
 3.  **Cài đặt cho Frontend:**
     ```bash
-    # Quay lại thư mục gốc
+    # Quay lại thư mục client
     cd ..
+    cd client 
 
     # Cài đặt các package cần thiết
     npm install
@@ -54,7 +55,7 @@ Project được chia thành hai phần chính:
         ```bash
         node index.js
         ```
-    * **Chạy Frontend:** Mở một terminal khác, ở thư mục gốc và chạy:
+    * **Chạy Frontend:** Mở một terminal khác, ở thư mục `/client` và chạy:
         ```bash
         npm run dev
         ```
